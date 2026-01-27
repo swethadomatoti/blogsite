@@ -13,10 +13,10 @@ urlpatterns = [
     # Home/Blog views
     path('', views.home, name='home1'),
     
-    # API endpoints
-    path('api/posts/', views.PostListCreateAPIView.as_view(), name='post_list_create'),
-    path('api/posts/<uuid:pk>/', views.PostDetailAPIView.as_view(), name='post_detail'),
-    path('api/categories/', views.CategoryListAPIView.as_view(), name='category_list'),
-    path('api/comments/', views.CommentListCreateAPIView.as_view(), name='comment_list_create'),
-    path('api/comments/<uuid:pk>/', views.CommentDetailAPIView.as_view(), name='comment_detail'),
+
+    path('posts/', views.PostListCreateAPIView.as_view(), name='post_list_create'),
+    path('posts/<uuid:pk>/', views.PostDetailAPIView.as_view(), name='post_detail'),
+    path('categories/', views.CategoryListAPIView.as_view(), name='category_list'),
+    path('comments/', views.CommentListCreateAPIView.as_view(), name='comment_list_create'),
+    path('comments/<uuid:pk>/', views.CommentDetailAPIView.as_view(), name='comment_detail'),
 ]

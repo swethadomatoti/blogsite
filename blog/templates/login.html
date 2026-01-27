@@ -124,9 +124,15 @@
             <span>OR</span>
         </div>
 
-        <a href="{% provider_login_url 'google' %}" class="btn btn-google">
-            <i class="fab fa-google"></i> Sign in with Google
-        </a>
+        {% if google_oauth_available %}
+            <a href="{% provider_login_url 'google' %}" class="btn btn-google">
+                <i class="fab fa-google"></i> Sign in with Google
+            </a>
+        {% else %}
+            <p style="text-align: center; color: #999; font-size: 14px; margin-top: 20px;">
+                Google OAuth not configured. Configure in Django admin.
+            </p>
+        {% endif %}
 
         <div class="login-footer">
             <p>Don't have an account? <a href="{% url 'register' %}">Register here</a></p>

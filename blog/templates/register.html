@@ -117,14 +117,20 @@
             {{ form.as_p }}
             <button type="submit" class="btn-register">Register</button>
         </form>
-
+  
         <div class="divider">
             <span>OR</span>
         </div>
 
-        <a href="{% provider_login_url 'google' %}" class="btn-google">
-            <i class="fab fa-google"></i> Sign up with Google
-        </a>
+        {% if google_oauth_available %}
+            <a href="{% provider_login_url 'google' %}" class="btn-google">
+                <i class="fab fa-google"></i> Sign up with Google
+            </a>
+        {% else %}
+            <p style="text-align: center; color: #999; font-size: 14px; margin-top: 20px;">
+                Google OAuth not configured. Configure in Django admin.
+            </p>
+        {% endif %}
 
         <div class="register-footer">
             <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
