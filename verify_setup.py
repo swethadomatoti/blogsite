@@ -23,15 +23,15 @@ def check_section(title):
 
 def check_pass(message):
     """Print passing check"""
-    print(f"✓ {message}")
+    print(f"[PASS] {message}")
 
 def check_warn(message):
     """Print warning"""
-    print(f"⚠ {message}")
+    print(f"[WARN] {message}")
 
 def check_fail(message):
     """Print failure"""
-    print(f"✗ {message}")
+    print(f"[FAIL] {message}")
 
 # ============ VERIFICATION CHECKS ============
 
@@ -70,7 +70,6 @@ except Exception as e:
 
 # Check tables exist
 from django.core.management import call_command
-from django.db.models import get_apps
 
 try:
     User = get_user_model()
@@ -250,11 +249,11 @@ except Exception as e:
 
 check_section("SUMMARY")
 print("""
-✓ Setup verification complete!
+[PASS] Setup verification complete!
 
 Next steps:
-1. If any checks failed (✗), fix those issues
-2. If any checks warned (⚠), review those items
+1. If any checks failed ([FAIL]), fix those issues
+2. If any checks warned ([WARN]), review those items
 3. Test locally: Visit http://127.0.0.1:8000
 4. Test admin: Visit http://127.0.0.1:8000/admin
 5. Test Google login: Visit http://127.0.0.1:8000/accounts/login/
