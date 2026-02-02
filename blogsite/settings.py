@@ -149,7 +149,7 @@ CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:8000']
 SOCIALACCOUNT_ADAPTER = 'blog.adapters.CustomSocialAccountAdapter'
 SOCIALACCOUNT_STORE_TOKENS = True
 
-# TEMP FIX: Disable migrations to rebuild tables directly on Render
+# TEMP FIX FOR BROKEN MIGRATIONS — rebuild DB tables directly
 MIGRATION_MODULES = {
     'admin': None,
     'auth': None,
@@ -157,4 +157,5 @@ MIGRATION_MODULES = {
     'sessions': None,
     'blog': None,
 }
+
 
