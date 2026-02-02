@@ -150,12 +150,16 @@ SOCIALACCOUNT_ADAPTER = 'blog.adapters.CustomSocialAccountAdapter'
 SOCIALACCOUNT_STORE_TOKENS = True
 
 # TEMP FIX FOR BROKEN MIGRATIONS — rebuild DB tables directly
+# ✅ TEMP FIX FOR BROKEN MIGRATIONS — rebuild DB tables directly
 MIGRATION_MODULES = {
     'admin': None,
     'auth': None,
     'contenttypes': None,
     'sessions': None,
     'blog': None,
+    'account': None,
+    'socialaccount': None,
+    'sites': None,
 }
 
 
