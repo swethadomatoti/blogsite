@@ -5,7 +5,7 @@ from .models import Post, Comment, Category, CustomUser
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        fields = '__all__'
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -15,16 +15,16 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    user = CustomUserSerializer(read_only=True)
+    user = serializers.ReadOnlyField(source='user.username')   
 
     class Meta:
         model = Comment
-        fields = ['id', 'content', 'user', 'created_at', 'post']
+        fields = ['id', 'user', 'content', 'created_at'] 
 
 
 class PostSerializer(serializers.ModelSerializer):
-    author = CustomUserSerializer(read_only=True)
-    category = CategorySerializer(read_only=True)
+    author = serializers.ReadOnlyField(source='author.username')
+    image = serializers.ImageField(required=False, allow_null=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(),
         write_only=True,
@@ -35,4 +35,4 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'title', 'content', 'author', 'category', 'category_id', 'image', 'created_at', 'updated_at', 'comments']
+        fields = '__all__'

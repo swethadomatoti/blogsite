@@ -9,19 +9,31 @@ from rest_framework.decorators import api_view, permission_classes
 
 from .models import Post, Comment, Category, CustomUser
 from .serializers import PostSerializer, CommentSerializer, CategorySerializer
-from .form import CustomUserCreationForm, PostForm, CommentForm
+from .form import CustomUserCreationForm, PostForm, CommentForm, RegistrationForm
 from .permissions import IsAuthorOrReadOnly
-import random
-import string
+from .task import send_welcome_celeryemail, send_otp_email
 
+def home(request):
+    posts = Post.objects.all().order_by('-created_at') # latest first 
+    return render(request, 'home1.html', {'posts': posts})
 
-# Helper function to generate OTP
-def generate_otp():
-    return ''.join(random.choices(string.digits, k=6))
+def register_user(request):
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)#creating an form
+        if form.is_valid():#Validate the form data
+            user = form.save()# Save the new user to the database
+            # send mail using celery
+            send_welcome_celeryemail.delay(user.email, user.username)
+            messages.success(request, "Registration successful! Check your email for a welcome message.")
+            return render(request,'login.html')
+        else:
+            print("Form invalid:", form.errors)
+    else:
+        form = RegistrationForm()
+        print("Form invalid:", form.errors)
+    return render(request, 'register.html', {'form': form})
 
-
-# Auth views
-def login_view(request):
+def login_user(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -30,140 +42,153 @@ def login_view(request):
             login(request, user)
             return redirect('home1')
         else:
-            messages.error(request, 'Invalid credentials')
+            messages.error(request, "Invalid username or password.")
     return render(request, 'login.html')
 
+import random  
+from django.utils import timezone
+from datetime import timedelta
 
-def register_view(request):
+# Step 1: Show form to enter email
+def forgot_password(request):
     if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, 'Account created successfully!')
-            return redirect('home1')
+        email = request.POST.get('email')# Get email 
+        try:
+            user = CustomUser.objects.get(email=email)# Find user by email
+            otp = str(random.randint(100000, 999999))# generate a 6-digit OTP
+            user.otp_code = otp# Save OTP and expiry time to user record
+            user.otp_expires_at = timezone.now() + timedelta(minutes=1)# setting 1 minute expiry
+            user.save()           #current date and time + time duration          
+            send_otp_email.delay(otp, user.email, user.username)
+            messages.success(request, 'OTP has been sent to your email.')
+            request.session['reset_email'] = user.email  # store temporarily for further verification
+            return redirect('verify_otp')  # move to OTP verification page  
+        except CustomUser.DoesNotExist:
+            messages.error(request, 'Email not found!')
+    return render(request, 'forgot_password.html')
+
+def verify_otp(request):
+    email = request.session.get('reset_email')#This email identifies which user is trying to reset their password.
+    if not email:
+        messages.error(request, "Session expired. Please try again.")
+        return redirect('forgot_password')
+    user = CustomUser.objects.get(email=email) #verifying who the user is before checking the OTP.
+    if request.method == 'POST':#if the form is submitted
+        entered_otp = request.POST.get('otp')#Getting the entered otp
+        if entered_otp == user.otp_code and not user.is_otp_expired():# it checks if the entered Otp is matched or not 
+            request.session['otp_verified'] = True  
+            return redirect('reset_password') 
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field}: {error}")
-    else:
-        form = CustomUserCreationForm()
-    return render(request, 'register.html', {'form': form})
+            messages.error(request, "Invalid or expired OTP.")
+    return render(request, 'verify_otp.html', {'email': email})
 
+# Step 2: Reset password form
+def reset_password(request):
+    email = request.session.get('reset_email')
+    otp_verified = request.session.get('otp_verified', False)
+    if not email or not otp_verified:
+        messages.error(request, "Unauthorized access.")
+        return redirect('forgot_password')
+    user = CustomUser.objects.get(email=email)
+    if request.method == 'POST':
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
+        if password1 == password2:
+            user.set_password(password1)
+            user.otp_code = ''
+            user.otp_expires_at = None
+            user.save()
+            # clear session
+            request.session.pop('reset_email', None)
+            request.session.pop('otp_verified', None)
+            messages.success(request, 'Password reset successfully! You can now login.')
+            return redirect('login')
+        else:
+            messages.error(request, 'Passwords do not match.')
+    return render(request, 'reset_password.html', {'user': user})
 
-def logout_view(request):
+def logout_user(request):
     logout(request)
+    messages.success(request, "You have been logged out.")
     return render(request, 'logout.html')
 
 
-def forgot_password_view(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        try:
-            user = CustomUser.objects.get(email=email)
-            otp = generate_otp()
-            request.session['otp'] = otp
-            request.session['email'] = email
-            request.session['user_id'] = str(user.id)
-            # In production, send OTP via email
-            print(f"OTP for {email}: {otp}")
-            messages.info(request, f'OTP sent to {email}')
-            return redirect('verify_otp')
-        except CustomUser.DoesNotExist:
-            messages.error(request, 'Email not found')
-    return render(request, 'forgot_password.html')
-
-
-def verify_otp_view(request):
-    if request.method == 'POST':
-        otp_input = request.POST.get('otp')
-        if otp_input == request.session.get('otp'):
-            request.session['otp_verified'] = True
-            return redirect('reset_password')
-        else:
-            messages.error(request, 'Invalid OTP')
-    return render(request, 'verify_otp.html')
-
-
-def reset_password_view(request):
-    if not request.session.get('otp_verified'):
-        return redirect('forgot_password')
-    
-    if request.method == 'POST':
-        password = request.POST.get('password')
-        password_confirm = request.POST.get('password_confirm')
-        
-        if password != password_confirm:
-            messages.error(request, 'Passwords do not match')
-        else:
-            user_id = request.session.get('user_id')
-            user = CustomUser.objects.get(id=user_id)
-            user.set_password(password)
-            user.save()
-            messages.success(request, 'Password reset successfully!')
-            # Clear session
-            del request.session['otp']
-            del request.session['email']
-            del request.session['user_id']
-            del request.session['otp_verified']
-            return redirect('login')
-    
-    return render(request, 'reset_password.html')
-
-
-# Main blog view
-@login_required(login_url='login')
-def home(request):
-    categories = Category.objects.all()
-    posts = Post.objects.all()
-    return render(request, 'home1.html', {
-        'categories': categories,
-        'posts': posts,
-    })
-
-
 # API Views
-class PostListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Post.objects.all()
-    serializer_class = PostSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+from django.shortcuts import render, get_object_or_404
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from .permissions import IsAuthorOrReadOnly
+from .serializers import PostSerializer
+from .models import Post
 
+ 
+class BlogView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
-class PostDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Post.objects.all()
-    serializer_class = PostSerializer
-    permission_classes = [IsAuthorOrReadOnly]
+    def get(self, request, pk=None):
+        category_id = request.GET.get('category')
+        if category_id is not None:
+            posts = Post.objects.filter(category_id=category_id).order_by('-created_at')
+            serializer = PostSerializer(posts, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        # If 'pk' is provided, return one post (for API or edit)
+        if pk:
+            post = get_object_or_404(Post, pk=pk)
+            serializer = PostSerializer(post)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            # Render the homepage template
+            posts = Post.objects.all().order_by('-created_at')
+            return render(request, 'home1.html', {'posts': posts})
 
+    def post(self, request):
+        serializer = PostSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(author=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class CategoryListAPIView(generics.ListAPIView):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
+    def put(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        self.check_object_permissions(request, post)
+        serializer = PostSerializer(post, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self, request, pk):
+        post = get_object_or_404(Post, pk=pk)
+        self.check_object_permissions(request, post)
+        post.delete()
+        return Response({'message': 'Deleted Successfully'}, status=status.HTTP_204_NO_CONTENT)
 
-class CommentListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    
-    def get_queryset(self):
-        post_id = self.request.query_params.get('post_id')
-        if post_id:
-            return Comment.objects.filter(post_id=post_id)
-        return Comment.objects.all()
-    
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
-class CommentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
-    permission_classes = [IsAuthorOrReadOnly]
-
-
-
-
-
+# -------------------------------------------------
+class CommentView(APIView): 
+    permission_classes = [IsAuthenticatedOrReadOnly] # GET comments for a post 
+    def get(self, request, post_id): 
+        post = get_object_or_404(Post, id=post_id)
+        comments = post.comments.all().order_by('-created_at') 
+        serializer = CommentSerializer(comments, many=True) 
+        return Response(serializer.data) # POST comment under a post 
+    def post(self, request, post_id): 
+        post = get_object_or_404(Post, id=post_id) 
+        serializer = CommentSerializer(data=request.data) 
+        if serializer.is_valid(): 
+            serializer.save(user=request.user, post=post) 
+            return Response(serializer.data, status=status.HTTP_201_CREATED) 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+class CategoryView(APIView): 
+    permission_classes = [IsAuthenticatedOrReadOnly] 
+    def get(self, request): 
+        categories = Category.objects.all() 
+        serializer = CategorySerializer(categories, many=True)
+        return Response(serializer.data)
+    def post(self, request): 
+        serializer = CategorySerializer(data=request.data) 
+        if serializer.is_valid():
+            serializer.save() 
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

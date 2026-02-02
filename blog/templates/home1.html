@@ -1,296 +1,547 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blog Home</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <style>
-        body {
-            background: #f8f9fa;
-        }
-        .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        .navbar-brand {
-            font-weight: bold;
-            font-size: 20px;
-        }
-        .post-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            overflow: hidden;
-            transition: transform 0.3s;
-        }
-        .post-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-        }
-        .post-header {
-            padding: 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
-        }
-        .post-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            margin: 0;
-        }
-        .post-meta {
-            font-size: 14px;
-            color: #666;
-            margin-top: 5px;
-        }
-        .post-image {
-            width: 100%;
-            max-height: 300px;
-            object-fit: cover;
-        }
-        .post-content {
-            padding: 20px;
-        }
-        .post-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .btn-small {
-            padding: 5px 15px;
-            font-size: 12px;
-        }
-        .comments-section {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-        }
-        .comment {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-        .comment-author {
-            font-weight: bold;
-            color: #333;
-        }
-        .comment-date {
-            font-size: 12px;
-            color: #999;
-        }
-        .new-post-section {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-        }
-        .form-control {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-        .btn-primary-custom {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .btn-primary-custom:hover {
-            opacity: 0.9;
-            color: white;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>My Blog</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#"><i class="fas fa-blog"></i> My Blog</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="#">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
 
-    <div class="container mt-5">
-        <!-- Create Post Section -->
-        <div class="new-post-section">
-            <h3><i class="fas fa-pen"></i> Create New Post</h3>
-            <form id="postForm">
-                {% csrf_token %}
-                <input type="text" id="title" class="form-control" placeholder="Post Title" required>
-                <textarea id="content" class="form-control" placeholder="Post Content" rows="4" required></textarea>
-                <select id="category" class="form-control" required>
-                    <option value="">Select Category</option>
-                </select>
-                <input type="file" id="image" class="form-control" accept="image/*">
-                <button type="submit" class="btn-primary-custom">
-                    <i class="fas fa-paper-plane"></i> Publish Post
-                </button>
-            </form>
-        </div>
-
-        <!-- Posts Section -->
-        <div id="postsContainer"></div>
+<body class="bg-light"> 
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container">
+    <a class="navbar-brand" href="/">My Blog</a>
+    <div class="d-flex ms-auto">
+      {% if user.is_authenticated %}
+        <span class="navbar-text text-white me-3">Welcome, {{ user.username }} 👋</span>
+        <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Logout</a>
+      {% else %}
+        <a href="{% url 'login' %}" class="btn btn-light btn-sm me-2">Login</a>
+        <a href="{% url 'register' %}" class="btn btn-warning btn-sm">Register</a>
+      {% endif %}
     </div>
+  </div>
+</nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        let allPosts = [];
+<!-- ---------- BLOG HEADER + SEARCH BAR ---------- -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap mt-3 container">
+  <h1 class="text-primary mb-3 mb-md-0">Welcome to My Blog 📝</h1>
 
-        // Load categories (combined API call)
-        async function loadCategories() {
-            try {
-                const response = await axios.get('/api/categories/');
-                const select = document.getElementById('category');
-                response.data.forEach(cat => {
-                    const option = document.createElement('option');
-                    option.value = cat.id;
-                    option.textContent = cat.name;
-                    select.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error loading categories:', error);
-            }
-        }
+  <div class="d-flex align-items-center">
+    <button id="backArrow" class="btn btn-outline-secondary me-2 d-none" onclick="showAllPosts()">←</button>
+    <select id="searchCategory" class="form-select me-2" style="min-width: 200px;">
+      <option value="">🔍 Select Category</option>
+    </select>
+    <button class="btn btn-outline-primary" onclick="filterByCategory()">Search</button>
+  </div>
+</div>
 
-        // Load all posts
-        async function loadPosts() {
-            try {
-                const response = await axios.get('/api/posts/');
-                allPosts = response.data;
-                renderPosts();
-            } catch (error) {
-                console.error('Error loading posts:', error);
-            }
-        }
+<hr class="container">
 
-        // Render posts
-        function renderPosts() {
-            const container = document.getElementById('postsContainer');
-            container.innerHTML = '';
+<!-- ---------- CREATE NEW POST ---------- -->
+<div class="container">
+  {% if user.is_authenticated %}
+  <div class="card mb-4 p-3 shadow-sm">
+    <h4>Create New Post</h4>
+    <form id="createForm">
+      <input type="text" id="title" class="form-control mb-2" placeholder="Title" required>
+      <textarea id="content" class="form-control mb-2" placeholder="Write your content..." required></textarea>
 
-            allPosts.forEach(post => {
-                const postHtml = `
-                    <div class="post-card">
-                        <div class="post-header">
-                            <h2 class="post-title">${post.title}</h2>
-                            <div class="post-meta">
-                                By <strong>${post.author.username}</strong> | 
-                                ${new Date(post.created_at).toLocaleDateString()} |
-                                <span class="badge bg-info">${post.category?.name || 'Uncategorized'}</span>
-                            </div>
-                        </div>
-                        ${post.image ? `<img src="${post.image}" class="post-image">` : ''}
-                        <div class="post-content">
-                            <p>${post.content.substring(0, 300)}...</p>
-                            <button class="btn btn-sm btn-outline-primary" onclick="showAllPosts('${post.id}')">Read More</button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleComments('${post.id}')">
-                                <i class="fas fa-comments"></i> Comments
-                            </button>
-                        </div>
-                        <div class="comments-section" id="comments-${post.id}" style="display: none;">
-                            <div id="comments-list-${post.id}"></div>
-                            <textarea class="form-control" placeholder="Add a comment..." id="comment-input-${post.id}"></textarea>
-                            <button class="btn btn-sm btn-primary mt-2" onclick="addComment('${post.id}')">Comment</button>
-                        </div>
-                    </div>
-                `;
-                container.innerHTML += postHtml;
-            });
-        }
+      <!-- Category dropdown -->
+      <select id="category" class="form-select mb-2" required>
+        <option value="">Select Category</option>
+      </select>
 
-        // Toggle comments visibility and load them lazily
-        async function toggleComments(postId) {
-            const section = document.getElementById(`comments-${postId}`);
-            if (section.style.display === 'none') {
-                section.style.display = 'block';
-                await loadComments(postId);
-            } else {
-                section.style.display = 'none';
-            }
-        }
+      <div class="input-group mb-3">
+        <input type="text" id="newCategory" class="form-control" placeholder="Add a new category...">
+        <button type="button" class="btn btn-outline-secondary" onclick="addCategory()">Add</button>
+      </div>
 
-        // Load comments for a post
-        async function loadComments(postId) {
-            try {
-                const response = await axios.get(`/api/comments/?post_id=${postId}`);
-                const commentsList = document.getElementById(`comments-list-${postId}`);
-                commentsList.innerHTML = '';
+      <input type="file" id="image" class="form-control mb-2">
+      <button type="submit" class="btn btn-success">Create Post</button>
+    </form>
+  </div>
+  {% endif %}
 
-                response.data.forEach(comment => {
-                    const commentHtml = `
-                        <div class="comment">
-                            <div class="comment-author">${comment.user.username}</div>
-                            <div class="comment-date">${new Date(comment.created_at).toLocaleDateString()}</div>
-                            <p>${comment.content}</p>
-                        </div>
-                    `;
-                    commentsList.innerHTML += commentHtml;
-                });
-            } catch (error) {
-                console.error('Error loading comments:', error);
-            }
-        }
+  <!-- ---------- POSTS CONTAINER ---------- -->
+  <div id="postContainer">
+    {% for post in posts %}
+    <div class="card mb-3 shadow-sm" id="post-{{ post.id }}">
+      <div class="card-body">
+        <div class="post-view">
+          <h3 class="card-title">{{ post.title }}</h3>
+          <p class="text-muted">
+            By <strong>{{ post.author.username }}</strong> | {{ post.created_at|date:"F d, Y" }}
+            {% if post.category %}
+              <strong>Category:</strong> {{ post.category.name }}
+            {% endif %}
+          </p>
+          <p class="card-text" id="content-{{ post.id }}">
 
-        // Add new comment
-        async function addComment(postId) {
-            const content = document.getElementById(`comment-input-${postId}`).value;
-            if (!content.trim()) return;
+          {% if post.content|length > 200 %}
+          <!-- Content > 200: truncated first -->
+           <span class="short-text">{{ post.content|truncatechars:200 }}</span>
+           <span class="dots">...</span>
+           <span class="more-text d-none">
+            {{ post.content }}
+            {% if post.image %}
+            <img src="{{ post.image.url }}" class="img-fluid mb-3 rounded shadow-sm d-none" alt="Post Image" id="image-{{ post.id }}">
+            {% endif %}</span>
+           <button class="btn btn-link p-0 text-primary" onclick="toggleContent({{ post.id }})">Read More</button>
+           <!-- Image will appear when expanded -->
+            
+            {% else %}
+            <!-- Content <= 200: show full content first -->
+             {{ post.content }}
+             {% if post.image %}
+             <img src="{{ post.image.url }}" class="img-fluid mb-3 rounded shadow-sm" alt="Post Image">
+             {% endif %}
+             {% endif %}
+          {% if user == post.author %}
+          <div class="mt-2">
+            <button class="btn btn-warning btn-sm me-2" onclick="startEdit({{ post.id }})">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deletePost({{ post.id }})">Delete</button>
+            </div>
+            {% endif %}
+            </div>
 
-            try {
-                await axios.post('/api/comments/', {
-                    content: content,
-                    post: postId
-                });
-                document.getElementById(`comment-input-${postId}`).value = '';
-                await loadComments(postId);
-            } catch (error) {
-                console.error('Error adding comment:', error);
-            }
-        }
+        <!-- Edit Mode -->
+        <div class="post-edit d-none">
+          <input type="text" id="edit-title-{{ post.id }}" class="form-control mb-2" value="{{ post.title }}">
+          <textarea id="edit-content-{{ post.id }}" class="form-control mb-2">{{ post.content }}</textarea>
+          <button class="btn btn-primary btn-sm" onclick="saveEdit({{ post.id }})">Save</button>
+          <button class="btn btn-secondary btn-sm" onclick="cancelEdit({{ post.id }})">Cancel</button>
+        </div>
 
-        // Create new post
-        document.getElementById('postForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            formData.append('title', document.getElementById('title').value);
-            formData.append('content', document.getElementById('content').value);
-            formData.append('category_id', document.getElementById('category').value);
-            if (document.getElementById('image').files.length > 0) {
-                formData.append('image', document.getElementById('image').files[0]);
-            }
+        <hr>
 
-            try {
-                await axios.post('/api/posts/', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                document.getElementById('postForm').reset();
-                await loadPosts();
-            } catch (error) {
-                console.error('Error creating post:', error);
-            }
+        <!-- Comments Section -->
+        <div id="comments-{{ post.id }}">
+          <h6>Comments</h6>
+          <div class="comment-list mb-2"></div>
+
+          {% if user.is_authenticated %}
+          <form class="commentForm" data-post="{{ post.id }}">
+            <div class="input-group">
+              <input type="text" class="form-control comment-input" placeholder="Add a comment..." required>
+              <button class="btn btn-outline-primary" type="submit">Post</button>
+            </div>
+          </form>
+          {% else %}
+          <p class="text-muted">Login to comment.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <p class="text-center text-muted">No blog posts yet. Be the first to write one!</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ---------- SCRIPTS ---------- -->
+<script>
+   const currentUser = "{{ user.username|escapejs }}";
+// ---------- CSRF ----------
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+axios.defaults.headers.common['X-CSRFToken'] = csrftoken;
+
+// ---------- LOAD CATEGORIES ----------
+async function loadCategories() {
+    const categorySelect = document.getElementById('category');
+    if (!categorySelect) return;
+    try {
+        const response = await axios.get('/categories/');
+        const categories = response.data;
+        categorySelect.innerHTML = '<option value="">Select Category</option>';
+        categories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.id;
+            option.textContent = cat.name;
+            categorySelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+// ---------- ADD CATEGORY ----------
+async function addCategory() {
+    const input = document.getElementById('newCategory');
+    const name = input.value.trim();
+    if (!name) return;
+
+    try {
+        const response = await axios.post('/categories/', { name }, {
+            headers: { 'Content-Type': 'application/json' },
         });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCategories();
-            loadPosts();
-        });
-    </script>
+        const newCat = response.data;
+        const categorySelect = document.getElementById('category');
+        const option = document.createElement('option');
+        option.value = newCat.id;
+        option.textContent = newCat.name;
+        categorySelect.appendChild(option);
+        categorySelect.value = newCat.id;
+
+        input.value = '';
+        await loadCategories();  
+    } catch (err) {
+        if (err.response && err.response.status === 400) {
+            alert('Category already exists.');
+            await loadCategories(); // reload existing categories
+        } else {
+            console.error('Error adding category:', err.response?.data || err.message);
+            alert('Failed to add category.');
+        }
+    }
+}
+// ---------- LOAD SEARCH CATEGORIES ----------
+async function loadSearchCategories() {
+  const select = document.getElementById('searchCategory');
+  try {
+    const res = await axios.get('/categories/');
+    const categories = res.data;
+    select.innerHTML = '<option value="">🔍 Select Category</option>';
+    categories.forEach(c => {
+      const option = document.createElement('option');
+      option.value = c.id;
+      option.textContent = c.name;
+      select.appendChild(option);
+    });
+  } catch (err) {
+    console.error('Error loading search categories:', err);
+  }
+}
+
+ 
+// ---------- FILTER POSTS BY CATEGORY ----------
+async function filterByCategory() {
+  const categoryId = document.getElementById('searchCategory').value;
+  const container = document.getElementById('postContainer');
+
+  try {
+    const res = await axios.get(`/BlogView/?category=${categoryId}`);
+    const posts = res.data;
+
+    container.innerHTML = '';
+
+    if (posts.length === 0) {
+      container.innerHTML = '<p class="text-center text-muted">No posts in this category.</p>';
+      return;
+    }
+
+    posts.forEach(post => {
+  const div = document.createElement('div');
+  div.classList.add('card', 'mb-3', 'shadow-sm');
+  div.id = `post-${post.id}`;  // ✅ important: make ID same as template
+
+  div.innerHTML = `
+    <div class="card-body">
+      <div class="post-view">
+        <h3 class="card-title">${post.title}</h3>
+        <p class="text-muted">
+          By <strong>${post.author}</strong> | ${new Date(post.created_at).toLocaleDateString()}
+          ${post.category ? `<strong>Category:</strong> ${post.category.name || post.category}` : ''}
+        </p>
+        <p class="card-text" id="content-${post.id}">
+          ${
+            post.content.length > 200
+              ? `<span class="short-text">${post.content.slice(0, 200)}</span>
+                 <span class="dots">...</span>
+                 <span class="more-text d-none">${post.content}</span>
+                 ${
+                   post.image
+                     ? `<img src="${post.image}" class="img-fluid mb-3 rounded shadow-sm d-none" id="image-${post.id}">`
+                     : ''
+                 }
+                 <button class="btn btn-link p-0 text-primary" onclick="toggleContent(${post.id})">Read More</button>`
+              : `${post.content}
+                 ${
+                   post.image
+                     ? `<img src="${post.image}" class="img-fluid mb-3 rounded shadow-sm" id="image-${post.id}">`
+                     : ''
+                 }`
+          }
+
+          ${post.author === currentUser 
+            ? `<div class="mt-2">
+                 <button class="btn btn-warning btn-sm me-2" onclick="startEdit(${post.id})">Edit</button>
+                 <button class="btn btn-danger btn-sm" onclick="deletePost(${post.id})">Delete</button>
+               </div>`
+            : ''}
+        </p>
+      </div>
+
+      <!-- ✅ Add hidden edit form for startEdit() -->
+      <div class="post-edit d-none">
+        <input type="text" id="edit-title-${post.id}" class="form-control mb-2" value="${post.title}">
+        <textarea id="edit-content-${post.id}" class="form-control mb-2">${post.content}</textarea>
+        <button class="btn btn-primary btn-sm" onclick="saveEdit(${post.id})">Save</button>
+        <button class="btn btn-secondary btn-sm" onclick="cancelEdit(${post.id})">Cancel</button>
+      </div>
+
+      <hr>
+
+      <!-- ✅ Comments Section -->
+      <div id="comments-${post.id}">
+        <h6>Comments</h6>
+        <div class="comment-list mb-2"></div>
+        ${
+          currentUser
+            ? `<form class="commentForm" data-post="${post.id}">
+                <div class="input-group">
+                  <input type="text" class="form-control comment-input" placeholder="Add a comment..." required>
+                  <button class="btn btn-outline-primary" type="submit">Post</button>
+                </div>
+              </form>`
+            : `<p class="text-muted">Login to comment.</p>`
+        }
+      </div>
+    </div>
+  `;
+
+  container.appendChild(div);
+});
+    document.getElementById('backArrow').classList.remove('d-none');
+    // Load comments for new posts
+   document.querySelectorAll('[id^="comments-"]').forEach(div => {
+    const postId = div.id.split('-')[1];
+    loadComments(postId);
+    });
+    // Reattach comment form submission handlers
+document.querySelectorAll('.commentForm').forEach(form => {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const postId = form.dataset.post;
+    const input = form.querySelector('.comment-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+      await axios.post(`/posts/${postId}/comments/`, { content: text });
+      input.value = '';
+      loadComments(postId);
+    } catch (err) {
+      console.error('Error posting comment:', err);
+      alert('Failed to post comment');
+    }
+  });
+});
+
+
+  } catch (err) {
+    console.error('Error filtering posts:', err);
+    alert('Failed to filter posts');
+  }
+}
+// ---------- SHOW ALL POSTS (Back Button) ----------
+async function showAllPosts() {
+  const container = document.getElementById('postContainer');
+  const backArrow = document.getElementById('backArrow');
+
+  try {
+    // Load all posts again
+    const res = await axios.get('/BlogView/');
+    const parser = new DOMParser();
+    const html = parser.parseFromString(res.data, 'text/html');
+
+    // Extract the posts container from the returned HTML
+    const newPosts = html.querySelector('#postContainer').innerHTML;
+    container.innerHTML = newPosts;
+    // Reload comments for all posts after going back
+    document.querySelectorAll('[id^="comments-"]').forEach(div => {
+      const postId = div.id.split('-')[1];
+      loadComments(postId);
+      });
+      
+      // Reattach comment form submission handlers
+document.querySelectorAll('.commentForm').forEach(form => {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const postId = form.dataset.post;
+    const input = form.querySelector('.comment-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+      await axios.post(`/posts/${postId}/comments/`, { content: text });
+      input.value = '';
+      loadComments(postId);
+    } catch (err) {
+      console.error('Error posting comment:', err);
+      alert('Failed to post comment');
+    }
+  });
+});
+
+
+    // Hide the back button again
+    backArrow.classList.add('d-none');
+  } catch (err) {
+    console.error('Error loading all posts:', err);
+    alert('Failed to reload posts.');
+  }
+}
+
+// ---------- CREATE POST ----------
+const form = document.getElementById('createForm');
+if (form) {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('title').value;
+    const content = document.getElementById('content').value;
+    const category = document.getElementById('category').value;
+    const imageFile = document.getElementById('image').files[0];
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('content', content);
+    formData.append('category', category);
+    if (imageFile) formData.append('image', imageFile);
+
+    try {
+      await axios.post('/BlogView/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      location.reload();
+    } catch (error) {
+      console.error('Error creating post:', error.response?.data || error.message);
+      alert('Failed to create post.');
+    }
+  });
+}
+
+// ---------- EDIT, DELETE, SAVE ----------
+function startEdit(id) {
+  const postCard = document.getElementById(`post-${id}`);
+  postCard.querySelector('.post-view').classList.add('d-none');
+  postCard.querySelector('.post-edit').classList.remove('d-none');
+}
+
+function cancelEdit(id) {
+  const postCard = document.getElementById(`post-${id}`);
+  postCard.querySelector('.post-edit').classList.add('d-none');
+  postCard.querySelector('.post-view').classList.remove('d-none');
+}
+
+async function saveEdit(id) {
+  const newTitle = document.getElementById(`edit-title-${id}`).value;
+  const newContent = document.getElementById(`edit-content-${id}`).value;
+  try {
+    await axios.put(`/BlogView/${id}/`, { title: newTitle, content: newContent });
+    location.reload();
+  } catch (error) {
+    console.error('Error updating post:', error);
+    alert('Failed to update post.');
+  }
+}
+
+async function deletePost(id) {
+  if (confirm('Are you sure you want to delete this post?')) {
+    try {
+      await axios.delete(`/BlogView/${id}/`);
+      location.reload();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post.');
+    }
+  }
+}
+// ---------- LOAD COMMENTS ----------
+async function loadComments(postId) {
+  const container = document.querySelector(`#comments-${postId} .comment-list`);
+  try {
+    const res = await axios.get(`/posts/${postId}/comments/`); // your Django endpoint to get comments
+    const comments = res.data;
+    container.innerHTML = '';
+    comments.forEach(c => {
+      const div = document.createElement('div');
+      div.classList.add('mb-1');
+      div.innerHTML = `<strong>${c.user}</strong>: ${c.content}`;
+      container.appendChild(div);
+    });
+  } catch (err) {
+    console.error('Error loading comments:', err);
+  }
+}
+
+// ---------- POST COMMENT ----------
+document.querySelectorAll('.commentForm').forEach(form => {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const postId = form.dataset.post;
+    const input = form.querySelector('.comment-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+      await axios.post(`/posts/${postId}/comments/`, {content: text});
+      input.value = '';
+      loadComments(postId); // reload comments after posting
+    } catch (err) {
+      console.error('Error posting comment:', err);
+      alert('Failed to post comment');
+    }
+  });
+});
+
+// ---------- TOGGLE READ MORE ----------
+function toggleContent(postId) {
+  const contentEl = document.getElementById(`content-${postId}`);
+  const dots = contentEl.querySelector('.dots');
+  const shortText = contentEl.querySelector('.short-text');
+  const moreText = contentEl.querySelector('.more-text');
+  const btn = contentEl.querySelector('button');
+  const imageEl = document.getElementById(`image-${postId}`);
+
+  if (moreText.classList.contains('d-none')) {
+    // Show full content
+    moreText.classList.remove('d-none');
+    dots.style.display = 'none';
+    shortText.style.display = 'none';
+    btn.textContent = 'Show Less';
+    if (imageEl) imageEl.classList.remove('d-none'); // show image
+  } else {
+    // Collapse content
+    moreText.classList.add('d-none');
+    dots.style.display = 'inline';
+    shortText.style.display = 'inline';
+    btn.textContent = 'Read More';
+    if (imageEl) imageEl.classList.add('d-none'); // hide image
+  }
+}
+
+
+// ---------- INIT ----------
+document.addEventListener('DOMContentLoaded', () => {
+  // Load categories for create post form
+  loadCategories();
+
+  // Load categories for search dropdown
+  loadSearchCategories();
+
+  // Load comments for all posts
+  document.querySelectorAll('[id^="comments-"]').forEach(div => {
+    const postId = div.id.split('-')[1];
+    loadComments(postId);
+  });
+});
+
+</script>
 </body>
 </html>

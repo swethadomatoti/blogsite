@@ -34,7 +34,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
-    def save_user(self, request, sociallogin):
+    def save_user(self, request, sociallogin,form=None):
         """Save user and send welcome email for new social signups."""
         user = sociallogin.user
         # Check if this is a new user

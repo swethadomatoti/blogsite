@@ -3,59 +3,21 @@ from django.core.mail import send_mail
 from django.conf import settings
 
 
+@shared_task # Marks the function as a Celery task
+def send_welcome_celeryemail(user_email, username):
+    subject = "Welcome to Django App!"
+    message = f"Hi {username},\n\nThank you for registering. You can now log in using your credentials."
+    send_mail(subject, message, settings.EMAIL_HOST_USER, [user_email], fail_silently=False)
+    print(f"Welcome email sent to {user_email}") # debug output
+    return "Email Sent Successfully" # Return a success message
 @shared_task
-def send_welcome_celeryemail(recipient_email, user_name):
-    """Send welcome email to new users."""
-    subject = 'Welcome to Our Blog!'
-    message = f'''
-    Hi {user_name},
-    
-    Welcome to our blog platform! We're excited to have you join our community.
-    
-    You can now:
-    - Create and publish blog posts
-    - Comment on other posts
-    - Explore different categories
-    
-    Happy blogging!
-    
-    Best regards,
-    The Blog Team
-    '''
-    
-    try:
-        send_mail(
-            subject,
-            message,
-            settings.EMAIL_HOST_USER,
-            [recipient_email],
-            fail_silently=False,
-        )
-        return f"Email sent to {recipient_email}"
-    except Exception as e:
-        return f"Error sending email: {str(e)}"
-
-
-@shared_task
-def send_password_reset_email(recipient_email, reset_token):
-    """Send password reset email."""
-    reset_url = f"http://yourdomain.com/reset-password/?token={reset_token}"
-    subject = 'Password Reset Request'
-    message = f'''
-    Click the link below to reset your password:
-    {reset_url}
-    
-    This link expires in 24 hours.
-    '''
-    
-    try:
-        send_mail(
-            subject,
-            message,
-            settings.EMAIL_HOST_USER,
-            [recipient_email],
-            fail_silently=False,
-        )
-        return f"Reset email sent to {recipient_email}"
-    except Exception as e:
-        return f"Error sending email: {str(e)}"
+def send_otp_email(username, user_email, otp):
+    subject = 'Your Password Reset OTP'
+    message = f"""Hi {username},
+                    Your OTP for password reset is: {otp}
+                    It will expire in 1 minutes.
+                    If you did not request this, ignore this email.
+               """
+    send_mail(subject, message, settings.EMAIL_HOST_USER, [user_email], fail_silently=False)
+    print(f"OTP email sent to {user_email}") # debug output
+    return "OTP Email Sent Successfully" # Return a success message
