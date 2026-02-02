@@ -152,5 +152,9 @@ SOCIALACCOUNT_STORE_TOKENS = True
 # TEMP FIX FOR DEPLOYMENT
 MIGRATION_MODULES = {
     'blog': None,
+    'auth': None,
+    'admin': None,
+    'contenttypes': None,
+    'sessions': None,
 }
 
